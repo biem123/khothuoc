@@ -18,9 +18,40 @@ const phieukiemkeModel = {
         return result;
     },
     updateTrangThai: async (maphieu, trangthai) => {
-        const sql = `UPDATE phieukiemke SET trangthai = ? WHERE maphieu = ?`;
-        const [result] = await db.query(sql, [trangthai, maphieu]);
-        return result;
+        const conn = await db.getConnection();
+        try {
+            await conn.beginTransaction();
+
+            if (trangthai === 'hoanthanh') {
+                const [chiTietRows] = await conn.query(
+                    'SELECT * FROM chitietkiemke WHERE maphieu = ?',
+                    [maphieu]
+                );
+
+                for (const row of chiTietRows) {
+                    const soLuongTru = Number(row.soluong_tru) || 0;
+                    if (soLuongTru === 0) continue;
+
+                    await conn.query(
+                        'UPDATE lothuoc SET tonthucte = tonthucte - ?, tonkhadung = tonkhadung - ? WHERE malo = ?',
+                        [soLuongTru, soLuongTru, row.malo]
+                    );
+                }
+            }
+
+            const [result] = await conn.query(
+                'UPDATE phieukiemke SET trangthai = ? WHERE maphieu = ?',
+                [trangthai, maphieu]
+            );
+
+            await conn.commit();
+            return result;
+        } catch (error) {
+            await conn.rollback();
+            throw error;
+        } finally {
+            conn.release();
+        }
     },
     delete: async (maphieu) => {
         const sql = 'DELETE FROM phieukiemke WHERE maphieu = ?';

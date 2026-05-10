@@ -14,11 +14,11 @@ const pool = mysql.createPool({
 // Kiểm tra kết nối thử
 pool.getConnection()
     .then(conn => {
-        console.log('✅ Đã kết nối MySQL thành công');
+        console.log('Đã kết nối MySQL thành công');
         conn.release(); 
     })
     .catch(err => {
-        console.error('❌ Lỗi kết nối Database:', err.message);
+        console.error('Lỗi kết nối Database:', err.message);
     });
 
 // QUAN TRỌNG NHẤT: Export trực tiếp biến pool ra ngoài

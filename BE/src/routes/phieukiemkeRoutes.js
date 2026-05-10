@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const phieukiemkeController = require('../controllers/phieukiemkeController');
+const auth = require('../middlewares/authMiddleware');
 
-router.get('/phieukiemke', phieukiemkeController.getAll);
-router.get('/phieukiemke/:maphieu', phieukiemkeController.getById);
-router.post('/phieukiemke', phieukiemkeController.create);
-router.put('/phieukiemke/:maphieu/trangthai', phieukiemkeController.updateTrangThai);
-router.delete('/phieukiemke/:maphieu', phieukiemkeController.delete);
+router.use('/phieukiemke', auth.verifyToken);
+
+router.get('/phieukiemke', auth.allowRoles('admin', 'nhanvien'), phieukiemkeController.getAll);
+router.get('/phieukiemke/:maphieu', auth.allowRoles('admin', 'nhanvien'), phieukiemkeController.getById);
+router.post('/phieukiemke', auth.allowRoles('admin', 'nhanvien'), phieukiemkeController.create);
+router.put('/phieukiemke/:maphieu/trangthai', auth.allowRoles('admin'), phieukiemkeController.updateTrangThai);
+router.delete('/phieukiemke/:maphieu', auth.allowRoles('admin'), phieukiemkeController.delete);
 
 module.exports = router;

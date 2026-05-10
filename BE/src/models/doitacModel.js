@@ -22,6 +22,33 @@ const DoiTacModel = {
         return rows;
     },
 
+    // 3b. Kiểm tra trùng số điện thoại hoặc email
+    findByPhoneOrEmail: async (sodienthoai, email, excludeId = null) => {
+        const conditions = [];
+        const params = [];
+
+        if (sodienthoai) {
+            conditions.push('sodienthoai = ?');
+            params.push(sodienthoai);
+        }
+
+        if (email) {
+            conditions.push('LOWER(email) = LOWER(?)');
+            params.push(email);
+        }
+
+        if (conditions.length === 0) return [];
+
+        let sql = `SELECT * FROM doitac WHERE (${conditions.join(' OR ')})`;
+        if (excludeId) {
+            sql += ' AND madoitac != ?';
+            params.push(excludeId);
+        }
+
+        const [rows] = await db.query(sql, params);
+        return rows;
+    },
+
     // 4. Thêm mới đối tác
     create: async (data) => {
         const { tendoitac, masothue, loaidoitac, diachi, sodienthoai, email, hanmucno, tongnohientai, trangthai, solangiaodich_thanhcong } = data;

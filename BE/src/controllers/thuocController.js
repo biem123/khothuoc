@@ -1,105 +1,91 @@
-// Import Model (Chúng ta sẽ viết file Model ngay sau bước này)
 const ThuocModel = require('../models/thuocModel');
+const response = require('../utils/response');
+
+const attachHttpMeta = (error) => {
+    if (error && error.code === 'ER_DUP_ENTRY') {
+        error.statusCode = 409;
+        error.message = 'Thuốc đã tồn tại';
+    }
+    return error;
+};
 
 const ThuocController = {
-    // 1. LẤY DANH SÁCH TẤT CẢ THUỐC (Read All)
-    getAllThuoc: async (req, res) => {
+    getAll: async (req, res, next) => {
         try {
-            const danhSachThuoc = await ThuocModel.getAll();
-            res.status(200).json({
-                success: true,
-                message: "Lấy danh sách thành công",
-                data: danhSachThuoc
-            });
+            const data = await ThuocModel.getAll();
+            return response.ok(res, data, 'Lấy danh sách thành công');
         } catch (error) {
-            console.error("Lỗi get all thuốc:", error);
-            res.status(500).json({ success: false, message: "Lỗi Server", error: error.message });
+            return next(attachHttpMeta(error));
         }
     },
 
-    // 2. LẤY THÔNG TIN 1 LOẠI THUỐC THEO MÃ (Read One)
-    getThuocById: async (req, res) => {
+    getById: async (req, res, next) => {
         try {
-            const { id } = req.params; // Lấy ID từ URL (VD: /api/thuoc/5)
-            const thuoc = await ThuocModel.getById(id);
+            const { id } = req.params;
+            const data = await ThuocModel.getById(id);
             
-            if (thuoc.length === 0) {
-                return res.status(404).json({ success: false, message: "Không tìm thấy thuốc này" });
-            }
-            
-            res.status(200).json({
-                success: true,
-                message: "Tìm thấy dữ liệu",
-                data: thuoc[0]
-            });
+            if (data.length === 0) return response.notFound(res, 'Không tìm thấy thuốc này');
+            return response.ok(res, data[0], 'Tìm thấy dữ liệu');
         } catch (error) {
-            console.error("Lỗi get thuốc by ID:", error);
-            res.status(500).json({ success: false, message: "Lỗi Server", error: error.message });
+            return next(attachHttpMeta(error));
         }
     },
 
-    // 3. THÊM MỚI MỘT LOẠI THUỐC (Create)
-    createThuoc: async (req, res) => {
+    create: async (req, res, next) => {
         try {
-            const newThuocData = req.body; // Dữ liệu Frontend gửi lên nằm ở đây
+            const newThuocData = req.body;
             
-            // Có thể thêm bước Validate dữ liệu ở đây (Ví dụ: kiểm tra trùng mã)
             if (!newThuocData.tenthuoc) {
-                return res.status(400).json({ success: false, message: "Tên thuốc không được để trống" });
+                return response.badRequest(res, 'Tên thuốc không được để trống');
+            }
+
+            // 🔥 ĐỒNG BỘ: Dùng isExist
+            const isExist = await ThuocModel.checkDuplicate(newThuocData.tenthuoc);
+            if (isExist) {
+                return response.conflict(res, 'Tên thuốc đã tồn tại');
             }
 
             const result = await ThuocModel.create(newThuocData);
-            
-            res.status(201).json({
-                success: true,
-                message: "Thêm mới thuốc thành công",
-                data: { id: result.insertId, ...newThuocData }
-            });
+            return response.created(res, { id: result.insertId, ...newThuocData }, 'Thêm mới thuốc thành công');
         } catch (error) {
-            console.error("Lỗi create thuốc:", error);
-            res.status(500).json({ success: false, message: "Lỗi Server", error: error.message });
+            return next(attachHttpMeta(error));
         }
     },
 
-    // 4. CẬP NHẬT THÔNG TIN THUỐC (Update)
-    updateThuoc: async (req, res) => {
+    update: async (req, res, next) => {
         try {
             const { id } = req.params;
             const updateData = req.body;
-            
-            const result = await ThuocModel.update(id, updateData);
 
-            if (result.affectedRows === 0) {
-                 return res.status(404).json({ success: false, message: "Không tìm thấy thuốc để cập nhật" });
+            if (updateData.tenthuoc) {
+                // 🔥 ĐỒNG BỘ: Dùng isExist có loại trừ ID hiện tại
+                const isExist = await ThuocModel.checkDuplicate(updateData.tenthuoc, id);
+                if (isExist) {
+                    return response.conflict(res, 'Tên thuốc đã tồn tại');
+                }
             }
+            
+            const shouldLockLo = Number(updateData.trangthai) === 0;
+            const result = shouldLockLo
+                ? await ThuocModel.updateStatusWithLock(id, updateData)
+                : await ThuocModel.update(id, updateData);
+            if (result.affectedRows === 0) return response.notFound(res, 'Không tìm thấy thuốc để cập nhật');
 
-            res.status(200).json({
-                success: true,
-                message: "Cập nhật thành công"
-            });
+            return response.ok(res, null, 'Cập nhật thành công');
         } catch (error) {
-            console.error("Lỗi update thuốc:", error);
-            res.status(500).json({ success: false, message: "Lỗi Server", error: error.message });
+            return next(attachHttpMeta(error));
         }
     },
 
-    // 5. XÓA MỘT LOẠI THUỐC (Delete)
-    deleteThuoc: async (req, res) => {
+    delete: async (req, res, next) => {
         try {
             const { id } = req.params;
             const result = await ThuocModel.delete(id);
 
-            if (result.affectedRows === 0) {
-                 return res.status(404).json({ success: false, message: "Không tìm thấy thuốc để xóa" });
-            }
-
-            res.status(200).json({ 
-                success: true, 
-                message: "Xóa thuốc thành công" 
-            });
+            if (result.affectedRows === 0) return response.notFound(res, 'Không tìm thấy thuốc để xóa');
+            return response.ok(res, null, 'Xóa thuốc thành công');
         } catch (error) {
-            console.error("Lỗi delete thuốc:", error);
-            res.status(500).json({ success: false, message: "Lỗi Server", error: error.message });
+            return next(attachHttpMeta(error));
         }
     }
 };

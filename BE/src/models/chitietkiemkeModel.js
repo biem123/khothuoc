@@ -3,10 +3,10 @@ const db = require('../configs/db');
 const chitietkiemkeModel = {
     // Lấy chi tiết của 1 phiếu kiểm kê cụ thể (JOIN thêm lothuoc để lấy số lô hiển thị cho đẹp)
     getByPhieuId: async (maphieu) => {
-        const sql = `SELECT ct.*, l.solo 
-                     FROM chitietkiemke ct
-                     LEFT JOIN lothuoc l ON ct.malo = l.malo
-                     WHERE ct.maphieu = ?`;
+        const sql = `SELECT ct.*, l.solo, l.tonthucte AS ton_he_thong
+                 FROM chitietkiemke ct
+                 LEFT JOIN lothuoc l ON ct.malo = l.malo
+                 WHERE ct.maphieu = ?`;
         const [rows] = await db.query(sql, [maphieu]);
         return rows;
     },

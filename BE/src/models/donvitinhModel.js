@@ -1,7 +1,6 @@
 const db = require('../configs/db');
 
 const donvitinhModel = {
-    // Lấy tất cả đơn vị tính (kèm tên thuốc cho dễ quản lý)
     getAll: async () => {
         const sql = `SELECT dv.*, t.tenthuoc 
                      FROM donvitinh dv
@@ -10,11 +9,25 @@ const donvitinhModel = {
         return rows;
     },
 
-    // Lấy danh sách đơn vị tính CỦA 1 LOẠI THUỐC cụ thể
     getByThuocId: async (mathuoc) => {
         const sql = 'SELECT * FROM donvitinh WHERE mathuoc = ?';
         const [rows] = await db.query(sql, [mathuoc]);
         return rows;
+    },
+
+    // 🔥 ĐỒNG BỘ: Hàm check trùng lặp (true/false)
+    checkDuplicate: async (tendonvi, mathuoc, excludeId = null) => {
+        let sql = 'SELECT 1 FROM donvitinh WHERE tendonvi = ? AND mathuoc = ?';
+        const params = [tendonvi, mathuoc];
+        
+        if (excludeId) {
+            sql += ' AND madonvitinh != ?';
+            params.push(excludeId);
+        }
+        sql += ' LIMIT 1';
+
+        const [rows] = await db.query(sql, params);
+        return rows.length > 0;
     },
 
     create: async (data) => {

@@ -1,53 +1,78 @@
 const donvitinhModel = require('../models/donvitinhModel');
+const response = require('../utils/response');
+
+const attachHttpMeta = (error) => {
+    if (error && error.code === 'ER_DUP_ENTRY') {
+        error.statusCode = 409;
+        error.message = 'Đơn vị tính đã tồn tại';
+    }
+    return error;
+};
 
 const donvitinhController = {
-    getAll: async (req, res) => {
+    getAll: async (req, res, next) => {
         try {
             const data = await donvitinhModel.getAll();
-            res.status(200).json({ success: true, data });
+            return response.ok(res, data, 'Lấy danh sách đơn vị tính thành công');
         } catch (error) {
-            res.status(500).json({ success: false, error: error.message });
+            return next(attachHttpMeta(error));
         }
     },
 
-    getByThuoc: async (req, res) => {
+    getByThuoc: async (req, res, next) => {
         try {
             const { mathuoc } = req.params;
             const data = await donvitinhModel.getByThuocId(mathuoc);
-            res.status(200).json({ success: true, data });
+            return response.ok(res, data, 'Lấy đơn vị tính theo thuốc thành công');
         } catch (error) {
-            res.status(500).json({ success: false, error: error.message });
+            return next(attachHttpMeta(error));
         }
     },
 
-    create: async (req, res) => {
+    create: async (req, res, next) => {
         try {
+            const { tendonvi, hesoquydoi, mathuoc } = req.body;
+
+            // 🔥 ĐỒNG BỘ: Dùng isExist (trả về true/false)
+            const isExist = await donvitinhModel.checkDuplicate(tendonvi, mathuoc);
+            if (isExist) {
+                return response.conflict(res, `Đơn vị '${tendonvi}' đã tồn tại cho thuốc này!`);
+            }
+
             const result = await donvitinhModel.create(req.body);
-            res.status(201).json({ success: true, message: "Thêm thành công", id_moi: result.insertId });
+            return response.created(res, { id_moi: result.insertId }, 'Thêm thành công');
         } catch (error) {
-            res.status(500).json({ success: false, error: error.message });
+            return next(attachHttpMeta(error));
         }
     },
 
-    update: async (req, res) => {
+    update: async (req, res, next) => {
         try {
             const { id } = req.params;
+            const { tendonvi, hesoquydoi, mathuoc } = req.body;
+
+            // 🔥 ĐỒNG BỘ: Dùng isExist có loại trừ ID
+            const isExist = await donvitinhModel.checkDuplicate(tendonvi, mathuoc, id);
+            if (isExist) {
+                return response.conflict(res, `Đơn vị '${tendonvi}' đã tồn tại cho thuốc này!`);
+            }
+
             const result = await donvitinhModel.update(id, req.body);
-            if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Không tìm thấy" });
-            res.status(200).json({ success: true, message: "Cập nhật thành công" });
+            if (result.affectedRows === 0) return response.notFound(res, 'Không tìm thấy đơn vị tính');
+            return response.ok(res, null, 'Cập nhật thành công');
         } catch (error) {
-            res.status(500).json({ success: false, error: error.message });
+            return next(attachHttpMeta(error));
         }
     },
 
-    delete: async (req, res) => {
+    delete: async (req, res, next) => {
         try {
             const { id } = req.params;
             const result = await donvitinhModel.delete(id);
-            if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Không tìm thấy" });
-            res.status(200).json({ success: true, message: "Xóa thành công" });
+            if (result.affectedRows === 0) return response.notFound(res, 'Không tìm thấy đơn vị tính');
+            return response.ok(res, null, 'Xóa thành công');
         } catch (error) {
-            res.status(500).json({ success: false, error: error.message });
+            return next(attachHttpMeta(error));
         }
     }
 };

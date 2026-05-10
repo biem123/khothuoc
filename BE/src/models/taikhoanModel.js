@@ -20,6 +20,13 @@ const taikhoanModel = {
         return rows;
     },
 
+    // Kiểm tra tồn tại theo tên đăng nhập (không phân biệt hoa thường)
+    existsByUsername: async (tendangnhap) => {
+        const sql = 'SELECT 1 FROM taikhoan WHERE LOWER(tendangnhap) = LOWER(?) LIMIT 1';
+        const [rows] = await db.query(sql, [tendangnhap]);
+        return rows.length > 0;
+    },
+
     create: async (data) => {
         const { tendangnhap, matkhau, vaitro } = data;
         const sql = `INSERT INTO taikhoan (tendangnhap, matkhau, vaitro) VALUES (?, ?, ?)`;

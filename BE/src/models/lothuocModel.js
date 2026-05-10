@@ -1,20 +1,52 @@
 const db = require('../configs/db');
 
 const LoThuocModel = {
-    // 1. Lấy tất cả lô thuốc (kèm tên thuốc cho dễ nhìn)
+    // 1. Lấy tất cả lô thuốc (kèm tên thuốc và giá nhập gần nhất)
     getAll: async () => {
-        const sql = `SELECT l.*, t.tenthuoc 
-                     FROM lothuoc l 
-                     JOIN thuoc t ON l.mathuoc = t.mathuoc 
+        await db.query(`UPDATE lothuoc SET trangthai = 'khoalo' WHERE hansudung < CURDATE() AND trangthai != 'khoalo'`);
+        const sql = `SELECT l.*, t.tenthuoc,
+                        (SELECT ct.dongia FROM chitietdonhang ct
+                         JOIN donhang dh ON ct.madonhang = dh.madonhang
+                         WHERE ct.malo = l.malo AND dh.loaidonhang = 'nhap'
+                         ORDER BY dh.ngaytao DESC LIMIT 1) AS gianhapgannhat
+                     FROM lothuoc l
+                     JOIN thuoc t ON l.mathuoc = t.mathuoc
                      ORDER BY l.ngaynhap DESC`;
         const [rows] = await db.query(sql);
         return rows;
     },
 
-    // 2. Lấy danh sách lô theo mã thuốc (Rất cần cho giao diện bán hàng)
     getByThuocId: async (mathuoc) => {
-        const sql = `SELECT * FROM lothuoc WHERE mathuoc = ? AND tonkhadung > 0 ORDER BY hansudung ASC`;
+        await db.query(`UPDATE lothuoc SET trangthai = 'khoalo' WHERE hansudung < CURDATE() AND trangthai != 'khoalo'`);
+        const sql = `
+            SELECT l.*, 
+            (SELECT ct.dongia FROM chitietdonhang ct 
+             JOIN donhang dh ON ct.madonhang = dh.madonhang 
+             WHERE ct.malo = l.malo AND dh.loaidonhang = 'nhap' 
+             ORDER BY dh.ngaytao DESC LIMIT 1) AS gianhapgannhat
+            FROM lothuoc l 
+            WHERE l.mathuoc = ? AND l.tonkhadung > 0 
+            ORDER BY l.hansudung ASC
+        `;
         const [rows] = await db.query(sql, [mathuoc]);
+        return rows;
+    },
+
+    // 2. Lấy lô theo mã
+    getById: async (malo) => {
+        const sql = 'SELECT * FROM lothuoc WHERE malo = ?';
+        const [rows] = await db.query(sql, [malo]);
+        return rows;
+    },
+
+    // 2b. Lấy trạng thái thuốc theo mã lô
+    getThuocTrangThaiByLo: async (malo) => {
+        const sql = `SELECT t.trangthai
+                     FROM lothuoc l
+                     JOIN thuoc t ON l.mathuoc = t.mathuoc
+                     WHERE l.malo = ?
+                     LIMIT 1`;
+        const [rows] = await db.query(sql, [malo]);
         return rows;
     },
 

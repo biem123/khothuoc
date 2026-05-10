@@ -1,39 +1,59 @@
 const phieukiemkeModel = require('../models/phieukiemkeModel');
+const response = require('../utils/response');
+
+const attachHttpMeta = (error) => {
+    if (error && error.code === 'ER_DUP_ENTRY') {
+        error.statusCode = 409;
+        error.message = 'Phiếu kiểm kê đã tồn tại';
+    }
+    return error;
+};
 
 const phieukiemkeController = {
-    getAll: async (req, res) => {
+    getAll: async (req, res, next) => {
         try {
             const data = await phieukiemkeModel.getAll();
-            res.status(200).json({ success: true, data });
-        } catch (error) { res.status(500).json({ success: false, error: error.message }); }
+            return response.ok(res, data, 'Lấy danh sách phiếu kiểm kê thành công');
+        } catch (error) {
+            return next(attachHttpMeta(error));
+        }
     },
-    getById: async (req, res) => {
+    getById: async (req, res, next) => {
         try {
             const data = await phieukiemkeModel.getById(req.params.maphieu);
-            if (data.length === 0) return res.status(404).json({ success: false, message: "Không tìm thấy phiếu" });
-            res.status(200).json({ success: true, data: data[0] });
-        } catch (error) { res.status(500).json({ success: false, error: error.message }); }
+            if (data.length === 0) return response.notFound(res, 'Không tìm thấy phiếu');
+            return response.ok(res, data[0], 'Lấy phiếu kiểm kê thành công');
+        } catch (error) {
+            return next(attachHttpMeta(error));
+        }
     },
-    create: async (req, res) => {
+    create: async (req, res, next) => {
         try {
-            if(!req.body.maphieu) return res.status(400).json({ success: false, message: "Mã phiếu là bắt buộc" });
+            if(!req.body.maphieu) return response.badRequest(res, 'Mã phiếu là bắt buộc');
             await phieukiemkeModel.create(req.body);
-            res.status(201).json({ success: true, message: "Tạo phiếu kiểm kê thành công", maphieu: req.body.maphieu });
-        } catch (error) { res.status(500).json({ success: false, error: error.message }); }
+            return response.created(res, { maphieu: req.body.maphieu }, 'Tạo phiếu kiểm kê thành công');
+        } catch (error) {
+            return next(attachHttpMeta(error));
+        }
     },
-    updateTrangThai: async (req, res) => {
+    updateTrangThai: async (req, res, next) => {
         try {
+            if (!req.body.trangthai) return response.badRequest(res, 'Thiếu dữ liệu trạng thái');
             const result = await phieukiemkeModel.updateTrangThai(req.params.maphieu, req.body.trangthai);
-            if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Không tìm thấy phiếu" });
-            res.status(200).json({ success: true, message: "Cập nhật trạng thái thành công" });
-        } catch (error) { res.status(500).json({ success: false, error: error.message }); }
+            if (result.affectedRows === 0) return response.notFound(res, 'Không tìm thấy phiếu');
+            return response.ok(res, null, 'Cập nhật trạng thái thành công');
+        } catch (error) {
+            return next(attachHttpMeta(error));
+        }
     },
-    delete: async (req, res) => {
+    delete: async (req, res, next) => {
         try {
             const result = await phieukiemkeModel.delete(req.params.maphieu);
-            if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Không tìm thấy phiếu" });
-            res.status(200).json({ success: true, message: "Xóa thành công" });
-        } catch (error) { res.status(500).json({ success: false, error: error.message }); }
+            if (result.affectedRows === 0) return response.notFound(res, 'Không tìm thấy phiếu');
+            return response.ok(res, null, 'Xóa thành công');
+        } catch (error) {
+            return next(attachHttpMeta(error));
+        }
     }
 };
 module.exports = phieukiemkeController;
