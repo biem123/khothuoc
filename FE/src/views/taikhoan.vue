@@ -12,7 +12,8 @@ const searchQuery = ref('');
 // --- MODAL CẤP MỚI ---
 const showModal = ref(false);
 const isSaving = ref(false);
-const formData = ref({ tendangnhap: '', matkhau: '', vaitro: 'NhanVien' });
+// 1. Sửa giá trị mặc định từ 'NhanVien' thành 'Sales'
+const formData = ref({ tendangnhap: '', matkhau: '', vaitro: 'Sales' });
 
 // --- MODAL ĐỔI MẬT KHẨU ---
 const showPasswordModal = ref(false);
@@ -46,7 +47,8 @@ const handleSave = async () => {
     await api.post('/taikhoan', formData.value); 
     alert('Cấp tài khoản thành công!');
     showModal.value = false;
-    formData.value = { tendangnhap: '', matkhau: '', vaitro: 'NhanVien' };
+    // 2. Sửa giá trị reset từ 'NhanVien' thành 'Sales'
+    formData.value = { tendangnhap: '', matkhau: '', vaitro: 'Sales' };
     loadData();
   } catch (error: any) { 
     alert(error.message || 'Lỗi hệ thống'); 
@@ -100,6 +102,21 @@ const handleDelete = async (id: number) => {
   }
 };
 
+// 3. Hàm Helper quản lý màu sắc Badge theo Role
+const getRoleBadgeClass = (role: string) => {
+  const normalizedRole = (role || '').toLowerCase();
+  switch (normalizedRole) {
+    case 'admin':
+      return 'bg-purple-100 text-purple-700 border-purple-200';
+    case 'kho':
+      return 'bg-blue-100 text-blue-700 border-blue-200';
+    case 'sales':
+      return 'bg-green-100 text-green-700 border-green-200';
+    default:
+      return 'bg-gray-100 text-gray-700 border-gray-200';
+  }
+};
+
 onMounted(() => loadData());
 </script>
 
@@ -135,7 +152,7 @@ onMounted(() => loadData());
             <td class="p-4 text-gray-500 font-medium">#{{ tk.mataikhoan }}</td>
             <td class="p-4 text-gray-800 font-bold">{{ tk.tendangnhap }}</td>
             <td class="p-4">
-              <span :class="tk.vaitro.toLowerCase() === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'" class="px-2 py-1 rounded-md text-xs font-bold border">
+              <span :class="getRoleBadgeClass(tk.vaitro)" class="px-2 py-1 rounded-md text-xs font-bold border">
                 {{ tk.vaitro }}
               </span>
             </td>
@@ -169,7 +186,8 @@ onMounted(() => loadData());
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Vai trò hệ thống</label>
             <select v-model="formData.vaitro" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white">
-              <option value="NhanVien">Nhân viên kho</option>
+              <option value="Sales">Nhân viên Bán hàng (Sales)</option>
+              <option value="Kho">Nhân viên Kho (Kho)</option>
               <option value="Admin">Quản trị viên (Admin)</option>
             </select>
           </div>

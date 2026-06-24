@@ -16,8 +16,6 @@ import TraCuuDonHang from '../views/tracuudonhang.vue';
 import BaoCaoThongKe from '../views/baocao.vue';
 import { useAuthStore } from '@/stores/auth' 
 
-
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -33,22 +31,21 @@ const router = createRouter({
       meta: { requiresAuth: true },
       children: [
         { path: 'dashboard-admin', name: 'dashboard-admin', component: DashboardView, meta: { roles: ['admin'] } },
-        { path: 'dashboard-nhanvien', name: 'dashboard-nhanvien', component: DashboardNhanVienView, meta: { roles: ['nhanvien'] } },
+        { path: 'dashboard-nhanvien', name: 'dashboard-nhanvien', component: DashboardNhanVienView, meta: { roles: ['kho', 'sales'] } },
         { path: '', redirect: () => {
             const authStore = useAuthStore();
             return authStore.isAdmin ? '/dashboard-admin' : '/dashboard-nhanvien';
         }},
-        { path: 'thuoc', name: 'thuoc', component: ThuocView },
-        { path: 'lo-thuoc', name: 'lothuoc', component: LoThuocView },
-        { path: 'don-vi-tinh', name: 'donvitinh', component: DonViTinhView },
-        { path: 'kiem-ke', name: 'kiemke', component: KiemKeView },
-        { path: 'tai-khoan', name: 'taikhoan', component: TaiKhoanView, meta: { roles: ['admin'] } }, // Chỉ admin cấu hình TK
-        // Đã thêm ngoặc đóng và cấp quyền cho cả nhân viên xem đối tác
-        { path: 'doi-tac', name: 'doitac', component: DoiTacView, meta: { roles: ['admin', 'nhanvien'] } }, 
-        { path: 'nhap-kho', name: 'nhapkho', component: PhieuNhapView },
-        { path: 'xuat-kho', name: 'xuatkho', component: PhieuXuatView },
+        { path: 'thuoc', name: 'thuoc', component: ThuocView, meta: { roles: ['admin', 'kho', 'sales'] } },
+        { path: 'lo-thuoc', name: 'lothuoc', component: LoThuocView, meta: { roles: ['admin', 'kho'] } },
+        { path: 'don-vi-tinh', name: 'donvitinh', component: DonViTinhView, meta: { roles: ['admin', 'kho'] } },
+        { path: 'kiem-ke', name: 'kiemke', component: KiemKeView, meta: { roles: ['admin', 'kho'] } },
+        { path: 'tai-khoan', name: 'taikhoan', component: TaiKhoanView, meta: { roles: ['admin'] } }, 
+        { path: 'doi-tac', name: 'doitac', component: DoiTacView, meta: { roles: ['admin', 'sales', 'kho'] } }, 
+        { path: 'nhap-kho', name: 'nhapkho', component: PhieuNhapView, meta: { roles: ['admin', 'kho'] } },
+        { path: 'xuat-kho', name: 'xuatkho', component: PhieuXuatView, meta: { roles: ['admin', 'sales'] } },
         { path: 'duyet-don', name: 'duyetdon', component: DuyetDonHangView, meta: { roles: ['admin'] } },
-        { path: 'lich-su-don-hang', name: 'lichsudonhang', component: LichSuDonHangView },
+        { path: 'lich-su-don-hang', name: 'lichsudonhang', component: LichSuDonHangView, meta: { roles: ['admin', 'sales', 'kho'] } },
         { path: 'bao-cao', name: 'baocao', component: BaoCaoThongKe, meta: { roles: ['admin'] } },
       ]
     }
@@ -69,7 +66,7 @@ router.beforeEach((to, from, next) => {
   else if (to.name === 'login' && isAuthenticated) {
     next('/'); // Đá vào trang chủ
   } 
-  // Điều hướng dashboard theo role
+  // Điều hướng dashboard theo role chuyên biệt
   else if (to.path === '/' && isAuthenticated) {
     if (userRole === 'admin') return next('/dashboard-admin');
     return next('/dashboard-nhanvien');
@@ -78,14 +75,14 @@ router.beforeEach((to, from, next) => {
   else if (to.meta.roles && Array.isArray(to.meta.roles)) {
     const allowed = (to.meta.roles as string[]).map((r) => r.toLowerCase());
     if (!allowed.includes(userRole)) {
+      // Nếu cố tình vào khu vực không được phép, trả về đúng Dashboard của họ
       return next(userRole === 'admin' ? '/dashboard-admin' : '/dashboard-nhanvien');
     }
     return next();
   }
-  // Hợp lệ thì cho đi tiếp
   else {
     next();
   }
 })
 
-export default router
+export default router;

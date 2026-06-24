@@ -21,19 +21,20 @@ const handleLogout = () => {
       
       <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
         <RouterLink :to="authStore.isAdmin ? '/dashboard-admin' : '/dashboard-nhanvien'" class="menu-item">📊 Tổng quan</RouterLink>
-        <RouterLink to="/thuoc" class="menu-item">💊 Danh mục Thuốc</RouterLink>
-        <RouterLink to="/don-vi-tinh" class="menu-item">⚖️ Đơn vị tính</RouterLink>
-        <RouterLink to="/lo-thuoc" class="menu-item">📦 Quản lý Lô</RouterLink>
-        <RouterLink to="/doi-tac" class="menu-item">🤝 Đối tác</RouterLink>
         
-        <RouterLink v-if="!authStore.isAdmin" to="/nhap-kho" class="menu-item">📦 Nhập kho</RouterLink>
-        <RouterLink v-if="!authStore.isAdmin" to="/xuat-kho" class="menu-item">🚚 Xuất kho</RouterLink>
+        <RouterLink to="/thuoc" class="menu-item">💊 Danh mục Thuốc</RouterLink>
+        <RouterLink to="/doi-tac" class="menu-item">🤝 Đối tác</RouterLink>
+
+        <RouterLink v-if="authStore.isAdmin || authStore.isKho" to="/don-vi-tinh" class="menu-item">⚖️ Đơn vị tính</RouterLink>
+        <RouterLink v-if="authStore.isAdmin || authStore.isKho" to="/lo-thuoc" class="menu-item">📦 Quản lý Lô</RouterLink>
+        <RouterLink v-if="authStore.isAdmin || authStore.isKho" to="/nhap-kho" class="menu-item">📥 Nhập kho</RouterLink>
+        <RouterLink v-if="authStore.isAdmin || authStore.isKho" to="/kiem-ke" class="menu-item">📋 Kiểm kê</RouterLink>
+        
+        <RouterLink v-if="authStore.isAdmin || authStore.isSales" to="/xuat-kho" class="menu-item">🚚 Xuất kho</RouterLink>
 
         <RouterLink v-if="authStore.isAdmin" to="/duyet-don" class="menu-item">
           ✅ Duyệt đơn hàng
         </RouterLink>
-
-        <RouterLink to="/kiem-ke" class="menu-item">📋 Kiểm kê</RouterLink>
         <RouterLink v-if="authStore.isAdmin" to="/lich-su-don-hang" class="menu-item">
           📜 Lịch sử giao dịch
         </RouterLink>
@@ -58,7 +59,7 @@ const handleLogout = () => {
                 {{ authStore.user?.tendangnhap || 'Người dùng' }}
               </span>
               <span class="text-[10px] text-gray-500 uppercase font-bold">
-                {{ authStore.isAdmin ? 'Quản trị viên' : 'Nhân viên' }}
+                {{ authStore.isAdmin ? 'Quản trị viên' : (authStore.isKho ? 'Nhân viên Kho' : 'Nhân viên Sales') }}
               </span>
             </div>
           </div>

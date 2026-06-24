@@ -67,21 +67,26 @@ const themDongChiTiet = () => {
 const xoaDong = (index: number) => chiTietData.value.splice(index, 1);
 
 const getDonViTheoThuoc = (mathuoc: any) => danhSachDonVi.value.filter((dv: any) => dv.mathuoc === mathuoc);
-const getLoTheoThuoc = (mathuoc: any) => danhSachLo.value.filter((lo: any) => lo.mathuoc === mathuoc && lo.tonkhadung > 0 && String(lo.trangthai || '').toLowerCase() === 'sansangban');
+const getLoTheoThuoc = (mathuoc: any, currentItem: any) => {
+  const selectedLoSet = new Set(
+    chiTietData.value
+      .filter((row: any) => row !== currentItem && row.malo)
+      .map((row: any) => row.malo)
+  );
+  return danhSachLo.value.filter((lo: any) => {
+    if (lo.mathuoc !== mathuoc) return false;
+    if (lo.tonkhadung <= 0) return false;
+    if (String(lo.trangthai || '').toLowerCase() !== 'sansangban') return false;
+    return !selectedLoSet.has(lo.malo);
+  });
+};
 const danhSachThuocCoTheXuat = computed(() => {
   const availableSet = new Set(danhSachLo.value
     .filter((lo: any) => lo.tonkhadung > 0 && String(lo.trangthai || '').toLowerCase() === 'sansangban')
     .map((lo: any) => lo.mathuoc));
   return danhSachThuoc.value.filter((t: any) => availableSet.has(t.mathuoc));
 });
-const getThuocOptionsForRow = (currentItem: any) => {
-  const selectedSet = new Set(
-    chiTietData.value
-      .filter((row: any) => row !== currentItem && row.mathuoc)
-      .map((row: any) => row.mathuoc)
-  );
-  return danhSachThuocCoTheXuat.value.filter((t: any) => !selectedSet.has(t.mathuoc));
-};
+const getThuocOptionsForRow = () => danhSachThuocCoTheXuat.value;
 
 const generateTrackingId = () => {
   const now = new Date();
@@ -466,13 +471,13 @@ onMounted(() => loadData());
                   <td class="p-2 align-top">
                     <select v-model="item.mathuoc" @change="handleChonThuoc(item)" class="w-full px-2 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-1 focus:ring-blue-500 shadow-sm" required>
                       <option value="" disabled>-- Thuốc --</option>
-                      <option v-for="t in getThuocOptionsForRow(item)" :key="t.mathuoc" :value="t.mathuoc">{{ t.tenthuoc }}</option>
+                      <option v-for="t in getThuocOptionsForRow()" :key="t.mathuoc" :value="t.mathuoc">{{ t.tenthuoc }}</option>
                     </select>
                   </td>
                   <td class="p-2 align-top">
                     <select v-model="item.malo" @change="handleChonLoHoacDonVi(item)" class="w-full px-2 py-2 border border-gray-300 rounded-md text-xs outline-none focus:ring-1 focus:ring-blue-500 shadow-sm" :disabled="!item.mathuoc" required>
                       <option value="" disabled>- Lô -</option>
-                      <option v-for="lo in getLoTheoThuoc(item.mathuoc)" :key="lo.malo" :value="lo.malo">{{ lo.solo }} (HSD: {{ formatDate(lo.hansudung) }})</option>
+                      <option v-for="lo in getLoTheoThuoc(item.mathuoc, item)" :key="lo.malo" :value="lo.malo">{{ lo.solo }} (HSD: {{ formatDate(lo.hansudung) }})</option>
                     </select>
                   </td>
                   <td class="p-2 align-top">

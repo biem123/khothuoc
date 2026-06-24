@@ -5,16 +5,15 @@ import axios from 'axios';
 // Đảm bảo đúng cổng backend của bạn là 5000
 const API_URL = 'http://localhost:5000/api'; 
 
-const sodienthoai = ref('');
 const mavandon3pl = ref(''); // Đồng bộ chuẩn tên biến với Backend
 const isLoading = ref(false);
 const errorMsg = ref('');
 const orderData = ref<any>(null);
 
 const handleSearch = async () => {
-  // Logic: Chỉ báo lỗi khi CẢ 2 ô đều bị bỏ trống
-  if (!sodienthoai.value && !mavandon3pl.value) {
-    errorMsg.value = 'Vui lòng nhập Số điện thoại hoặc Mã vận đơn!';
+  // Logic: Chỉ tìm theo Mã vận đơn
+  if (!mavandon3pl.value) {
+    errorMsg.value = 'Vui lòng nhập Mã vận đơn!';
     return;
   }
   
@@ -25,7 +24,6 @@ const handleSearch = async () => {
   try {
     const response = await axios.post(`${API_URL}/donhang/tracuu-congkhai`, {
       // Truyền đúng tên biến xuống Backend. Nếu rỗng thì truyền null để tránh lỗi thư viện MySQL
-      sodienthoai: sodienthoai.value.trim() || null,
       mavandon3pl: mavandon3pl.value.trim() || null
     });
     
@@ -50,7 +48,6 @@ const vietQrUrl = computed(() => {
   if (!orderData.value || tienConNo.value <= 0) return '';
   const amount = Math.round(tienConNo.value);
   const addInfo = `Thanh toan don hang XUAT${orderData.value.madonhang}`;
-  // Thay thế bằng tài khoản thật của bạn nếu muốn
   const base = 'https://api.vietqr.io/image/970436-1042328265-wp5fFpl.jpg?accountName=TRAN%20TUAN%20DAT';
   return `${base}&amount=${amount}&addInfo=${encodeURIComponent(addInfo)}`;
 });
@@ -87,15 +84,9 @@ const step = computed(() => {
           {{ errorMsg }}
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div>
-            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Mã vận đơn (Tracking)</label>
-            <input v-model="mavandon3pl" type="text" placeholder="VD: VNPOST-..." class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all font-semibold text-gray-700">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Số điện thoại đặt hàng</label>
-            <input v-model="sodienthoai" type="tel" placeholder="09xxxx..." class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all font-semibold text-gray-700">
-          </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Mã vận đơn (Tracking)</label>
+          <input v-model="mavandon3pl" type="text" placeholder="VD: VNPOST-..." class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all font-semibold text-gray-700">
         </div>
         
         <button type="submit" :disabled="isLoading" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-all active:scale-[0.98] disabled:bg-gray-400 flex justify-center items-center gap-2">
